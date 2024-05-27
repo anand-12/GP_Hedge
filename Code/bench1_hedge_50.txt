@@ -1,0 +1,140 @@
+['EI', 'LCB', 'PI']
+Probs:  [0.33333333 0.33333333 0.33333333]
+1
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+['EI', 'LCB', 'PI']
+Probs:  [0. 0. 1.]
+2
+0.21833817404090325
+[-0.4672667054701236]
