@@ -8,7 +8,7 @@ from skopt.callbacks import VerboseCallback
 
 noise_level = 1.0
 bounds = [(0., 1.), (0., 1.), (0., 1.), (0., 1.), (0., 1.), (0., 1.)]
-n_calls, n_random, random_state = 10, 5, 5
+n_calls, n_random, random_state = 100, 5, 31
 initial_point_generator = "lhs"
 
 verbose_callback = VerboseCallback(n_total=n_calls)
@@ -58,7 +58,7 @@ if hasattr(res_gp_hedge, 'index_for_gp_hedge'):
 handles = [plt.Line2D([0], [0], color=color, lw=4, label=label)
            for color, label in zip(acq_func_colors, acq_func_names)]
 
-handles.append(plt.Line2D([0], [0], color='yellow', lw=4, label='gp_hedge'))
+handles.append(plt.Line2D([0], [0], color='cyan', lw=4, label='gp_hedge'))
 
 ax.legend(handles=handles, loc='best', prop={'size': 6})
 
