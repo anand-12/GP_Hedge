@@ -13,22 +13,20 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# Define the Hartmann 6-dimensional function
 hart6 = Hartmann(dim=6)
 
-# Update the target function to use Hartmann 6-dimensional function
 def target_function(individuals):
     result = []
     for x in individuals:
         result.append(-1.0 * hart6(x))
     return torch.tensor(result)
 
-train_x = torch.rand(10, 6, dtype=torch.double)  # 6-dimensional input
+train_x = torch.rand(10, 6, dtype=torch.double)  
 exact_obj = target_function(train_x).unsqueeze(-1)
 best_observed_value = exact_obj.max().item()
 
 def generate_initial_data(n=10):
-    train_x = torch.rand(n, 6, dtype=torch.double)  # 6-dimensional input
+    train_x = torch.rand(n, 6, dtype=torch.double)  
     exact_obj = target_function(train_x).unsqueeze(-1)
     best_observed_value = exact_obj.max().item()
     return train_x, exact_obj, best_observed_value
@@ -65,7 +63,7 @@ best_observed_values = []
 
 chosen_acq_functions = []
 
-# Define a function to plot the best observed values
+
 def plot_best_observed(best_observed_values):
     plt.figure(figsize=(10, 6))
     plt.plot(best_observed_values, marker='o', linestyle='-', color='b')
@@ -75,7 +73,6 @@ def plot_best_observed(best_observed_values):
     plt.grid(True)
     plt.show()
 
-# Define a function to plot the chosen acquisition functions
 def plot_chosen_acq_functions(chosen_acq_functions):
     plt.figure(figsize=(10, 6))
     plt.plot(chosen_acq_functions, marker='o', linestyle='-', color='r')
@@ -86,7 +83,6 @@ def plot_chosen_acq_functions(chosen_acq_functions):
     plt.grid(True)
     plt.show()
 
-# Perform the optimization and store the best observed values and chosen acquisition functions
 n_iterations = 50
 init_x, init_y, best_init_y = generate_initial_data(20)
 
@@ -104,18 +100,16 @@ for i in range(n_iterations):
     chosen_acq_functions.append(chosen_acq_index)
     print(f"Best point performs this way: {best_init_y}")
 
-    # Update weights based on performance
+
     if new_results.max().item() > best_observed_values[-1]:
         weights[chosen_acq_index] += 1.0
-    weights = weights / weights.sum()  # Normalize weights
+    weights = weights / weights.sum() 
 
 print(f"Best observed result: {best_init_y}")
 best_candidate = init_x[((init_y == best_init_y).nonzero(as_tuple=True)[0])][0][0]
 print(f"Best location of observed result: {best_candidate}")
 
-# Plot the best observed values
-plot_best_observed(best_observed_values)
 
-# Plot the chosen acquisition functions
+plot_best_observed(best_observed_values)
 plot_chosen_acq_functions(chosen_acq_functions)
 

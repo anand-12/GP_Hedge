@@ -17,10 +17,8 @@ def run(minimizer, n_iter=5):
     return [minimizer(func, bounds, n_calls=n_calls, random_state=n)
             for n in range(n_iter)]
 
-# Random search
 dummy_res = run(dummy_minimize)
 
-# Gaussian processes
 gp_res = run(gp_minimize)
 
 

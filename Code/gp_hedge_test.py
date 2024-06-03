@@ -7,7 +7,7 @@ from skopt.benchmarks import bench1
 noise_level = 0.1
 test_function = bench1
 
-#Plot bench1
+
 
 bounds = [(-100.0, 100.0)]
 x = np.linspace(-100, 100, 400).reshape(-1, 1)
