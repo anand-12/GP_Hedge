@@ -8,7 +8,7 @@ from skopt.callbacks import VerboseCallback
 
 noise_level = 1.0
 bounds = [(0., 1.), (0., 1.), (0., 1.), (0., 1.), (0., 1.), (0., 1.)]
-n_calls, n_random, random_state = 100, 5, 31
+n_calls, n_random, random_state = 10, 5, 31
 initial_point_generator = "lhs"
 
 verbose_callback = VerboseCallback(n_total=n_calls)
@@ -34,7 +34,7 @@ res_gp_hedge = gp_minimize(hart6, bounds, base_estimator="GP", acq_func="gp_hedg
                            n_calls=n_calls, n_random_starts=n_random, noise=0.1**2,
                            initial_point_generator=initial_point_generator, random_state=random_state,
                            callback=callbacks)
-
+print(res_pi.models)
 
 fig, ax = plt.subplots(figsize=(10, 6))
 ax, colors = plot_convergence(("pi_minimize", res_pi),
