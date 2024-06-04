@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 def target_function(test_function, individuals):
     result = []
@@ -22,12 +23,15 @@ def target_function(test_function, individuals):
     return torch.tensor(result).to(device)
 
 def generate_initial_data(test_function, n=10):
-    train_x = torch.rand(n, test_function.dim, dtype=torch.double).to(device)  
+    print(f"Generating initial data with {n} points.")
+    train_x = torch.rand(n, test_function.dim, dtype=torch.double).to(device)
     exact_obj = target_function(test_function, train_x).unsqueeze(-1)
     best_observed_value = exact_obj.max().item()
+    print(f"Initial best observed value: {best_observed_value}")
     return train_x, exact_obj, best_observed_value
 
 def fit_model(train_x, train_y, kernel_type):
+    print(f"Fitting model with {kernel_type} kernel.")
     if kernel_type == 'RBF':
         covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
     elif kernel_type == 'Matern':
@@ -48,16 +52,20 @@ def fit_model(train_x, train_y, kernel_type):
     return model, mll
 
 def calculate_weights(models, mlls, train_x, train_y):
+    print("Calculating weights for models based on marginal log likelihood.")
     log_likelihoods = np.array([mll(models[i](train_x), train_y).sum().item() for i, mll in enumerate(mlls)])
     max_log_likelihood = np.max(log_likelihoods)
-    log_likelihoods -= max_log_likelihood  
+    log_likelihoods -= max_log_likelihood
     weights = np.exp(log_likelihoods) / np.sum(np.exp(log_likelihoods))
+    print(f"Model weights: {weights}")
     return weights
 
 def select_model(weights):
+    print("Selecting model based on weights.")
     return np.random.choice(len(weights), p=weights)
 
 def get_next_points(train_x, train_y, best_init_y, bounds, eta, n_points=1, gains=None, kernel_types=['RBF', 'Matern', 'RQ'], acq_func_types=['EI', 'UCB', 'PI']):
+    print("Getting next points.")
     models = []
     mlls = []
     for kernel in kernel_types:
@@ -68,6 +76,7 @@ def get_next_points(train_x, train_y, best_init_y, bounds, eta, n_points=1, gain
     weights = calculate_weights(models, mlls, train_x, train_y)
     selected_model_index = select_model(weights)
     selected_model = models[selected_model_index]
+    print(f"Selected model index: {selected_model_index}")
 
     EI = ExpectedImprovement(model=selected_model, best_f=best_init_y)
     UCB = UpperConfidenceBound(model=selected_model, beta=0.1)
@@ -75,7 +84,7 @@ def get_next_points(train_x, train_y, best_init_y, bounds, eta, n_points=1, gain
 
     acq_funcs = {'EI': EI, 'UCB': UCB, 'PI': PI}
     acquisition_functions = [acq_funcs[acq] for acq in acq_func_types]
-    
+
     candidates_list = []
     for acq_function in acquisition_functions:
         candidates, _ = optimize_acqf(acq_function=acq_function, bounds=bounds, q=n_points, num_restarts=20, raw_samples=512, options={"batch_limit": 5, "maxiter": 200})
@@ -86,6 +95,7 @@ def get_next_points(train_x, train_y, best_init_y, bounds, eta, n_points=1, gain
     exp_logits = np.exp(eta * logits)
     probs = exp_logits / np.sum(exp_logits)
     chosen_acq_index = np.random.choice(len(acquisition_functions), p=probs)
+    print(f"Chosen acquisition function index: {chosen_acq_index}")
 
     return candidates_list[chosen_acq_index], chosen_acq_index, selected_model_index, selected_model
 
@@ -98,8 +108,9 @@ def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_
     all_best_observed_values = []
 
     for run in range(n_runs):
+        print(f"Run number {run + 1}/{n_runs}")
         init_x, init_y, best_init_y = generate_initial_data(test_function, 20)
-        bounds = torch.tensor([[0.] * test_function.dim, [1.] * test_function.dim]).to(device)  
+        bounds = torch.tensor([[0.] * test_function.dim, [1.] * test_function.dim]).to(device)
         gains = np.zeros(len(acq_func_types))
         eta = 0.1  
 
@@ -109,6 +120,8 @@ def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_
         best_init_y = train_y.max().item()
 
         for t in range(n_iterations):
+            print(f"Iteration number {t + 1}/{n_iterations}")
+            print(f"Best function value yet: {best_init_y}")
             new_candidates, chosen_acq_index, selected_model_index, selected_model = get_next_points(train_x, train_y, best_init_y, bounds, eta, 1, gains, kernel_types, acq_func_types)
             new_results = target_function(test_function, new_candidates).unsqueeze(-1)
 
