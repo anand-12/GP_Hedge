@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from botorch.test_functions import Hartmann
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
-from botorch import fit_gpytorch_model
+from botorch import fit_gpytorch_mll
 from botorch.acquisition import ExpectedImprovement, UpperConfidenceBound, ProbabilityOfImprovement
 from botorch.optim import optimize_acqf
 import warnings
@@ -34,7 +34,7 @@ eta = 0.1
 def get_next_points(init_x, init_y, best_init_y, bounds, n_points=1, gains=None):
     single_model = SingleTaskGP(init_x, init_y)
     mll = ExactMarginalLogLikelihood(single_model.likelihood, single_model)
-    fit_gpytorch_model(mll)
+    fit_gpytorch_mll(mll)
 
     EI = ExpectedImprovement(model=single_model, best_f=best_init_y)
     UCB = UpperConfidenceBound(model=single_model, beta=0.1)
