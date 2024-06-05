@@ -3,7 +3,7 @@ import gpytorch
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from botorch.test_functions import Hartmann, Branin, Ackley, Beale, Rosenbrock
+from botorch.test_functions import Hartmann, Ackley, Rosenbrock, Levy, Powell, Shekel, StyblinskiTang
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
 from botorch import fit_gpytorch_mll
@@ -12,12 +12,35 @@ from botorch.optim import optimize_acqf
 import warnings
 import pickle
 import os
+import random
 
 warnings.filterwarnings("ignore")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dtype = torch.double
 print(f"Using device: {device}")
+
+# Define the true maxima and their locations for the test functions
+true_maxima = {
+    "Hartmann": 3.322368011415515,
+    "Ackley": 0.0,
+    "Rosenbrock": 0.0,
+    "Levy": 0.0,
+    "Powell": 0.0,
+    "Shekel": 10.536409816115536,  # Corrected value from botorch documentation
+    "StyblinskiTang": -39.16599 * 6  # For 6 dimensions
+}
+
+true_max_locations = {
+    "Hartmann": torch.tensor([0.20169, 0.150011, 0.476874, 0.275332, 0.311652, 0.6573]),
+    "Ackley": torch.zeros(2),
+    "Rosenbrock": torch.ones(4),
+    "Levy": torch.ones(2),
+    "Powell": torch.zeros(10),
+    "Shekel": torch.tensor([4.0, 4.0, 4.0, 4.0]),  # Corrected value from botorch documentation
+    "StyblinskiTang": torch.full((6,), -2.903534)  # For 6 dimensions
+}
+
 
 def target_function(test_function, individuals):
     result = []
@@ -107,16 +130,16 @@ def update_data(train_x, train_y, new_x, new_y):
     train_y = torch.cat([train_y, new_y])
     return train_x, train_y
 
-def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_runs, seeds):
+def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_runs, seeds, bounds):
     all_best_observed_values = []
 
     for run, seed in enumerate(seeds):
         print(f"Run number {run + 1}/{n_runs} with seed {seed}")
         torch.manual_seed(seed)
         np.random.seed(seed)
+        random.seed(seed)
         
-        init_x, init_y, best_init_y = generate_initial_data(test_function, 20)
-        bounds = torch.tensor([[0.] * test_function.dim, [1.] * test_function.dim], dtype=dtype).to(device)
+        init_x, init_y, best_init_y = generate_initial_data(test_function, 1)
         gains = np.zeros(len(acq_func_types))
         eta = 0.1  
 
@@ -151,12 +174,13 @@ def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_
     mean_best_observed_values = np.mean(all_best_observed_values, axis=0)
     return mean_best_observed_values, all_best_observed_values
 
-def plot_results(mean_results, titles, test_function_name, save_path):
+def plot_results(mean_results, titles, test_function_name, save_path, true_maximum, true_max_location):
     plt.figure(figsize=(12, 8))
 
     for mean_best_observed_values, title in zip(mean_results, titles):
-        plt.plot(mean_best_observed_values, marker='o', linestyle='-', label=title)
+        plt.plot(mean_best_observed_values, marker='.', linestyle='-', label=title)
     
+    plt.axhline(y=true_maximum, color='k', linestyle='--', label='True Maxima')
     plt.title(f"Mean Performance Comparison for {test_function_name}")
     plt.xlabel("Iteration")
     plt.ylabel("Best Objective Function Value")
@@ -165,22 +189,35 @@ def plot_results(mean_results, titles, test_function_name, save_path):
     plt.savefig(save_path)
     print(f"Saved plot to {save_path}")
 
-n_iterations = 100
-n_runs = 10
+    if true_max_location is not None:
+        print(f"Global maximum location for {test_function_name}: {true_max_location.cpu().numpy()}")
+
+n_iterations = 3
+n_runs = 2
 seeds = [42, 123, 456, 789, 101112, 131415, 161718, 192021, 222324, 252627]
-test_functions = [Hartmann(dim=6).to(device, dtype=dtype), Branin().to(device, dtype=dtype), Ackley(dim=6).to(device, dtype=dtype), Beale().to(device, dtype=dtype), Rosenbrock(dim=6).to(device, dtype=dtype)]
+
+# Define test functions, bounds and true maxima
+test_functions = [
+    (Hartmann(dim=6).to(device, dtype=dtype), torch.tensor([[0., 0., 0., 0., 0., 0.], [1., 1., 1., 1., 1., 1.]], dtype=dtype).to(device), true_maxima["Hartmann"], true_max_locations["Hartmann"]),
+    (Ackley(dim=2).to(device, dtype=dtype), torch.tensor([[-32.768, -32.768], [32.768, 32.768]], dtype=dtype).to(device), true_maxima["Ackley"], true_max_locations["Ackley"]),
+    # (Rosenbrock(dim=4).to(device, dtype=dtype), torch.tensor([[-5., -5., -5., -5.], [10., 10., 10., 10.]], dtype=dtype).to(device), true_maxima["Rosenbrock"], true_max_locations["Rosenbrock"]),
+    (Levy(dim=2).to(device, dtype=dtype), torch.tensor([[-10., -10.], [10., 10.]], dtype=dtype).to(device), true_maxima["Levy"], true_max_locations["Levy"]),
+    # (Powell(dim=10).to(device, dtype=dtype), torch.tensor([[-4., -4., -4., -4., -4., -4., -4., -4., -4., -4.], [5., 5., 5., 5., 5., 5., 5., 5., 5., 5.]], dtype=dtype).to(device), true_maxima["Powell"], true_max_locations["Powell"]),
+    (Shekel().to(device, dtype=dtype), torch.tensor([[0.0, 0.0, 0.0, 0.0], [10.0, 10.0, 10.0, 10.0]], dtype=dtype).to(device), true_maxima["Shekel"], true_max_locations["Shekel"])
+    # (StyblinskiTang(dim=6).to(device, dtype=dtype), torch.tensor([[-5.0, -5.0, -5.0, -5.0, -5.0, -5.0], [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]], dtype=dtype).to(device), true_maxima["StyblinskiTang"], true_max_locations["StyblinskiTang"])
+]
 
 mean_results = []
 titles = ["All Models and All Acquisition Functions", "All Models and Only EI", "Only Matern Model and All Acquisition Functions"]
 
-for test_function in test_functions:
+for test_function, bounds, true_max, true_max_location in test_functions:
     print(f"Running experiments for {test_function.__class__.__name__}")
 
-    mean_results1, _ = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], n_runs, seeds)
-    mean_results2, _ = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], n_runs, seeds)
-    mean_results3, _ = run_experiment(test_function, n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], n_runs, seeds)
+    mean_results1, _ = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], n_runs, seeds, bounds)
+    mean_results2, _ = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], n_runs, seeds, bounds)
+    mean_results3, _ = run_experiment(test_function, n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], n_runs, seeds, bounds)
 
     mean_results.append([mean_results1, mean_results2, mean_results3])
 
     plot_save_path = f"{test_function.__class__.__name__}_mean_performance_comparison.png"
-    plot_results([mean_results1, mean_results2, mean_results3], titles, test_function.__class__.__name__, plot_save_path)
+    plot_results([mean_results1, mean_results2, mean_results3], titles, test_function.__class__.__name__, plot_save_path, true_max, true_max_location)

@@ -35,11 +35,11 @@ def plot_mean_performance(mean_results, titles):
 base_path = "/export/home/anandr/GP_Hedge/Code"
 
 # Dataset names
-dataset_names = ["Hartmann", "Branin", "Ackley"]
+dataset_names = ["Hartmann"]
 
 n_runs = 10
 mean_results = []
-save_path = "/export/home/anandr/GP_Hedge/mean_performance_comparison.png"
+save_path = "/export/home/anandr/GP_Hedge/Hartmann_performance_comparison.png"
 # Load and aggregate results for each dataset
 for dataset_name in dataset_names:
     print(f"Loading data for {dataset_name}")
@@ -52,9 +52,7 @@ for dataset_name in dataset_names:
 
 # Titles for the plots
 titles = [
-    "Hartmann Function",
-    "Branin Function",
-    "Ackley Function"
+    "Hartmann Function"
 ]
 
 # Plot the mean performance

@@ -3,7 +3,7 @@ import gpytorch
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from botorch.test_functions import Hartmann
+from botorch.test_functions import Hartmann, Ackley, Rosenbrock, Levy, Powell
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
 from botorch import fit_gpytorch_mll
@@ -14,15 +14,22 @@ import warnings
 warnings.filterwarnings("ignore")
 
 hart6 = Hartmann(dim=6)
+ackley2 = Ackley(dim=2)
+
+# Define the true maxima for the test functions
+true_maxima = {
+    "Hartmann": 3.32237,  # For the 6-dimensional Hartmann function
+    "Ackley": 0.0,  # For the 2-dimensional Ackley function
+}
 
 def target_function(individuals):
     result = []
     for x in individuals:
-        result.append(-1.0 * hart6(x))
+        result.append(-1.0 * ackley2(x))
     return torch.tensor(result)
 
-def generate_initial_data(n=10):
-    train_x = torch.rand(n, 6, dtype=torch.double)  
+def generate_initial_data(n, n_dim):
+    train_x = torch.rand(n, n_dim, dtype=torch.double)  
     exact_obj = target_function(train_x).unsqueeze(-1)
     best_observed_value = exact_obj.max().item()
     return train_x, exact_obj, best_observed_value
@@ -95,9 +102,10 @@ def update_data(train_x, train_y, new_x, new_y):
     train_y = torch.cat([train_y, new_y])
     return train_x, train_y
 
-def run_experiment(n_iterations, kernel_types, acq_func_types):
-    init_x, init_y, best_init_y = generate_initial_data(20)
-    bounds = torch.tensor([[0., 0., 0., 0., 0., 0.], [1., 1., 1., 1., 1., 1.]])  
+def run_experiment(n_iterations, kernel_types, acq_func_types, initial_data):
+    bounds = initial_data["bounds"]
+    train_x, train_y, best_init_y = initial_data["train_x"], initial_data["train_y"], initial_data["best_init_y"]
+    
     gains = np.zeros(len(acq_func_types))
     eta = 0.1  
 
@@ -105,7 +113,6 @@ def run_experiment(n_iterations, kernel_types, acq_func_types):
     chosen_acq_functions = []
     selected_models = []
 
-    train_x, train_y = init_x, init_y
     best_init_y = train_y.max().item()
 
     for t in range(n_iterations):
@@ -125,16 +132,18 @@ def run_experiment(n_iterations, kernel_types, acq_func_types):
         reward = posterior_mean.mean().item()
         gains[chosen_acq_index] += reward
 
-    return best_observed_values, chosen_acq_functions, selected_models
+    return best_observed_values, chosen_acq_functions, selected_models, initial_data["true_maximum"]
 
-def plot_results(results, titles):
+def plot_results(results, titles, test_function_name, true_maximum):
     fig, axs = plt.subplots(3, 1, figsize=(10, 18))
 
-    for i, (best_observed_values, chosen_acq_functions, selected_models) in enumerate(results):
+    for i, (best_observed_values, chosen_acq_functions, selected_models, true_maximum) in enumerate(results):
         axs[i].plot(best_observed_values, marker='o', linestyle='-', color='b')
+        axs[i].axhline(y=true_maximum, color='k', linestyle='--', label='True Maxima')
         axs[i].set_title(titles[i])
         axs[i].set_xlabel("Iteration")
         axs[i].set_ylabel("Best Objective Function Value")
+        axs[i].legend()
         axs[i].grid(True)
         
         ax2 = axs[i].twinx()
@@ -153,17 +162,28 @@ def plot_results(results, titles):
         ax3.grid(True)
 
     plt.tight_layout()
+    plt.savefig(f"results_{test_function_name}.png")
     plt.show()
 
-n_iterations = 100
+n_iterations = 30
 
-results1 = run_experiment(n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'])
+ackley_bounds = torch.tensor([[-32.768, -32.768], [32.768, 32.768]])
+init_x, init_y, best_init_y = generate_initial_data(10, n_dim=ackley_bounds.size(1))
+initial_data = {
+    "train_x": init_x,
+    "train_y": init_y,
+    "best_init_y": best_init_y,
+    "bounds": ackley_bounds,
+    "true_maximum": true_maxima['Ackley']
+}
 
-results2 = run_experiment(n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'])
+results1 = run_experiment(n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], initial_data)
 
-results3 = run_experiment(n_iterations, ['Matern'], ['EI', 'UCB', 'PI'])
+results2 = run_experiment(n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], initial_data)
+
+results3 = run_experiment(n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], initial_data)
 
 results = [results1, results2, results3]
 titles = ["All Models and All Acquisition Functions", "All Models and Only EI", "Only Matern Model and All Acquisition Functions"]
 
-plot_results(results, titles)
+plot_results(results, titles, "Ackley", true_maxima['Ackley'])
