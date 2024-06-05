@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from botorch.test_functions import Hartmann, Branin, Ackley, Beale, Rosenbrock
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
-from botorch import fit_gpytorch_mll
+from botorch import fit_gpytorch_model
 from botorch.acquisition import ExpectedImprovement, UpperConfidenceBound, ProbabilityOfImprovement
 from botorch.optim import optimize_acqf
 import warnings
@@ -16,17 +16,18 @@ import os
 warnings.filterwarnings("ignore")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+dtype = torch.double
 print(f"Using device: {device}")
 
 def target_function(test_function, individuals):
     result = []
     for x in individuals:
         result.append(-1.0 * test_function(x))
-    return torch.tensor(result).to(device)
+    return torch.tensor(result, dtype=dtype).to(device)
 
 def generate_initial_data(test_function, n=10):
     print(f"Generating initial data with {n} points.")
-    train_x = torch.rand(n, test_function.dim, dtype=torch.double).to(device)
+    train_x = torch.rand(n, test_function.dim, dtype=dtype).to(device)
     exact_obj = target_function(test_function, train_x).unsqueeze(-1)
     best_observed_value = exact_obj.max().item()
     print(f"Initial best observed value: {best_observed_value}")
@@ -48,9 +49,9 @@ def fit_model(train_x, train_y, kernel_type):
             super().__init__(train_x, train_y)
             self.covar_module = covar_module
 
-    model = CustomGP(train_x, train_y).to(device)
+    model = CustomGP(train_x, train_y).to(device, dtype=dtype)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
-    fit_gpytorch_mll(mll)
+    fit_gpytorch_model(mll)
     return model, mll
 
 def calculate_weights(models, mlls, train_x, train_y):
@@ -115,7 +116,7 @@ def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_
         np.random.seed(seed)
         
         init_x, init_y, best_init_y = generate_initial_data(test_function, 20)
-        bounds = torch.tensor([[0.] * test_function.dim, [1.] * test_function.dim]).to(device)
+        bounds = torch.tensor([[0.] * test_function.dim, [1.] * test_function.dim], dtype=dtype).to(device)
         gains = np.zeros(len(acq_func_types))
         eta = 0.1  
 
@@ -148,25 +149,26 @@ def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_
         print(f"Saved results to {result_file}")
 
     mean_best_observed_values = np.mean(all_best_observed_values, axis=0)
-    return mean_best_observed_values
+    return mean_best_observed_values, all_best_observed_values
 
-def plot_results(mean_results, titles):
+def plot_results(mean_results, titles, test_function_name, save_path):
     plt.figure(figsize=(12, 8))
 
     for mean_best_observed_values, title in zip(mean_results, titles):
         plt.plot(mean_best_observed_values, marker='o', linestyle='-', label=title)
     
-    plt.title("Mean Performance Comparison")
+    plt.title(f"Mean Performance Comparison for {test_function_name}")
     plt.xlabel("Iteration")
     plt.ylabel("Best Objective Function Value")
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.savefig(save_path)
+    print(f"Saved plot to {save_path}")
 
 n_iterations = 100
 n_runs = 10
 seeds = [42, 123, 456, 789, 101112, 131415, 161718, 192021, 222324, 252627]
-test_functions = [Hartmann(dim=6).to(device), Branin().to(device), Ackley(dim=6).to(device), Beale().to(device), Rosenbrock(dim=6).to(device)]
+test_functions = [Hartmann(dim=6).to(device, dtype=dtype), Branin().to(device, dtype=dtype), Ackley(dim=6).to(device, dtype=dtype), Beale().to(device, dtype=dtype), Rosenbrock(dim=6).to(device, dtype=dtype)]
 
 mean_results = []
 titles = ["All Models and All Acquisition Functions", "All Models and Only EI", "Only Matern Model and All Acquisition Functions"]
@@ -174,8 +176,11 @@ titles = ["All Models and All Acquisition Functions", "All Models and Only EI", 
 for test_function in test_functions:
     print(f"Running experiments for {test_function.__class__.__name__}")
 
-    mean_results1 = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], n_runs, seeds)
-    mean_results2 = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], n_runs, seeds)
-    mean_results3 = run_experiment(test_function, n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], n_runs, seeds)
+    mean_results1, _ = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], n_runs, seeds)
+    mean_results2, _ = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], n_runs, seeds)
+    mean_results3, _ = run_experiment(test_function, n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], n_runs, seeds)
 
-    plot_results([mean_results1, mean_results2, mean_results3], titles)
+    mean_results.append([mean_results1, mean_results2, mean_results3])
+
+    plot_save_path = f"{test_function.__class__.__name__}_mean_performance_comparison.png"
+    plot_results([mean_results1, mean_results2, mean_results3], titles, test_function.__class__.__name__, plot_save_path)
