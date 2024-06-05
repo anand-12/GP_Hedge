@@ -10,6 +10,8 @@ from botorch import fit_gpytorch_mll
 from botorch.acquisition import ExpectedImprovement, UpperConfidenceBound, ProbabilityOfImprovement
 from botorch.optim import optimize_acqf
 import warnings
+import pickle
+import os
 
 warnings.filterwarnings("ignore")
 
@@ -104,11 +106,14 @@ def update_data(train_x, train_y, new_x, new_y):
     train_y = torch.cat([train_y, new_y])
     return train_x, train_y
 
-def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_runs):
+def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_runs, seeds):
     all_best_observed_values = []
 
-    for run in range(n_runs):
-        print(f"Run number {run + 1}/{n_runs}")
+    for run, seed in enumerate(seeds):
+        print(f"Run number {run + 1}/{n_runs} with seed {seed}")
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        
         init_x, init_y, best_init_y = generate_initial_data(test_function, 20)
         bounds = torch.tensor([[0.] * test_function.dim, [1.] * test_function.dim]).to(device)
         gains = np.zeros(len(acq_func_types))
@@ -136,6 +141,12 @@ def run_experiment(test_function, n_iterations, kernel_types, acq_func_types, n_
 
         all_best_observed_values.append(best_observed_values)
 
+        # Save each run's results
+        result_file = f"{test_function.__class__.__name__}_run_{run + 1}_seed_{seed}.pkl"
+        with open(result_file, 'wb') as f:
+            pickle.dump(best_observed_values, f)
+        print(f"Saved results to {result_file}")
+
     mean_best_observed_values = np.mean(all_best_observed_values, axis=0)
     return mean_best_observed_values
 
@@ -154,6 +165,7 @@ def plot_results(mean_results, titles):
 
 n_iterations = 100
 n_runs = 10
+seeds = [42, 123, 456, 789, 101112, 131415, 161718, 192021, 222324, 252627]
 test_functions = [Hartmann(dim=6).to(device), Branin().to(device), Ackley(dim=6).to(device), Beale().to(device), Rosenbrock(dim=6).to(device)]
 
 mean_results = []
@@ -162,8 +174,8 @@ titles = ["All Models and All Acquisition Functions", "All Models and Only EI", 
 for test_function in test_functions:
     print(f"Running experiments for {test_function.__class__.__name__}")
 
-    mean_results1 = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], n_runs)
-    mean_results2 = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], n_runs)
-    mean_results3 = run_experiment(test_function, n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], n_runs)
+    mean_results1 = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI', 'UCB', 'PI'], n_runs, seeds)
+    mean_results2 = run_experiment(test_function, n_iterations, ['RBF', 'Matern', 'RQ'], ['EI'], n_runs, seeds)
+    mean_results3 = run_experiment(test_function, n_iterations, ['Matern'], ['EI', 'UCB', 'PI'], n_runs, seeds)
 
     plot_results([mean_results1, mean_results2, mean_results3], titles)
