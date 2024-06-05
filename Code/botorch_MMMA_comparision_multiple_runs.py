@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from botorch.test_functions import Hartmann, Branin, Ackley, Beale, Rosenbrock
 from botorch.models import SingleTaskGP
 from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikelihood
-from botorch import fit_gpytorch_model
+from botorch import fit_gpytorch_mll
 from botorch.acquisition import ExpectedImprovement, UpperConfidenceBound, ProbabilityOfImprovement
 from botorch.optim import optimize_acqf
 import warnings
@@ -51,7 +51,7 @@ def fit_model(train_x, train_y, kernel_type):
 
     model = CustomGP(train_x, train_y).to(device, dtype=dtype)
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
-    fit_gpytorch_model(mll)
+    fit_gpytorch_mll(mll)
     return model, mll
 
 def calculate_weights(models, mlls, train_x, train_y):
