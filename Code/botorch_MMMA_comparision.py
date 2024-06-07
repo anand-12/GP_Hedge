@@ -25,7 +25,7 @@ true_maxima = {
 def target_function(individuals):
     result = []
     for x in individuals:
-        result.append(-1.0 * ackley2(x))
+        result.append(-1.0 * hart6(x))
     return torch.tensor(result)
 
 def generate_initial_data(n, n_dim):
@@ -103,6 +103,7 @@ def update_data(train_x, train_y, new_x, new_y):
     return train_x, train_y
 
 def run_experiment(n_iterations, kernel_types, acq_func_types, initial_data):
+    np.random.seed(0)
     bounds = initial_data["bounds"]
     train_x, train_y, best_init_y = initial_data["train_x"], initial_data["train_y"], initial_data["best_init_y"]
     
@@ -146,34 +147,35 @@ def plot_results(results, titles, test_function_name, true_maximum):
         axs[i].legend()
         axs[i].grid(True)
         
-        ax2 = axs[i].twinx()
-        ax2.plot(chosen_acq_functions, marker='o', linestyle='-', color='r')
-        ax2.set_ylabel("Acquisition Function Index")
-        ax2.set_yticks([0, 1, 2])
-        ax2.set_yticklabels(["EI", "UCB", "PI"])
-        ax2.grid(True)
+        # ax2 = axs[i].twinx()
+        # ax2.plot(chosen_acq_functions, marker='o', linestyle='-', color='r')
+        # ax2.set_ylabel("Acquisition Function Index")
+        # ax2.set_yticks([0, 1, 2])
+        # ax2.set_yticklabels(["EI", "UCB", "PI"])
+        # ax2.grid(True)
 
-        ax3 = axs[i].twinx()
-        ax3.plot(selected_models, marker='o', linestyle='-', color='g')
-        ax3.set_ylabel("Model Index")
-        ax3.set_yticks([0, 1, 2])
-        ax3.set_yticklabels(["RBF", "Matern", "RQ"])
-        ax3.spines["right"].set_position(("outward", 60))
-        ax3.grid(True)
+        # ax3 = axs[i].twinx()
+        # ax3.plot(selected_models, marker='o', linestyle='-', color='g')
+        # ax3.set_ylabel("Model Index")
+        # ax3.set_yticks([0, 1, 2])
+        # ax3.set_yticklabels(["RBF", "Matern", "RQ"])
+        # ax3.spines["right"].set_position(("outward", 60))
+        # ax3.grid(True)
 
     plt.tight_layout()
     plt.savefig(f"results_{test_function_name}.png")
     plt.show()
 
-n_iterations = 30
+n_iterations = 15
 
 ackley_bounds = torch.tensor([[-32.768, -32.768], [32.768, 32.768]])
-init_x, init_y, best_init_y = generate_initial_data(10, n_dim=ackley_bounds.size(1))
+hart6_bounds = torch.tensor([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
+init_x, init_y, best_init_y = generate_initial_data(2, n_dim=hart6_bounds.size(1))
 initial_data = {
     "train_x": init_x,
     "train_y": init_y,
     "best_init_y": best_init_y,
-    "bounds": ackley_bounds,
+    "bounds": hart6_bounds,
     "true_maximum": true_maxima['Ackley']
 }
 
